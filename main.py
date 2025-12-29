@@ -13,6 +13,7 @@ ingestion = ComprehensiveSoccerDataIngestion(api_key = api_key)
 data = ingestion.get_player_stats(player_id = 1100, season = 2023)
 
 # Verifying it is correct
+"""
 if data.get("response"):
     stats = data["response"][0]["statistics"][0]
     team_name = stats["team"]["name"]
@@ -21,3 +22,6 @@ if data.get("response"):
     print(f"Goals: {goals}")
 else:
     print("No data found. Uh oh...")
+
+"""
+ingestion.get_leagues(country="England") 

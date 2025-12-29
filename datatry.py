@@ -1,11 +1,11 @@
 import time
 import requests
-from typing import Optional, Dict
 import os
+import pandas as pd
 
 class ComprehensiveSoccerDataIngestion:
     
-    def __init__(self, api_key: Optional[str] = None, rate_limit_delay: float = 1.0): 
+    def __init__(self, api_key, rate_limit_delay: float = 12.0): 
         self.api_key = api_key
         self.base_url = "https://v3.football.api-sports.io"
         self.headers = {
@@ -16,9 +16,9 @@ class ComprehensiveSoccerDataIngestion:
         os.makedirs(self.cache_dir, exist_ok=True)
         
         # Ensuring I got API connection
-        self._test_connection()
+        # self.test_connection()
     
-    def _test_connection(self):
+    def test_connection(self):
         try:
             response = requests.get(
                 f"{self.base_url}/timezone",
@@ -35,7 +35,7 @@ class ComprehensiveSoccerDataIngestion:
             print(f"API connection failed: {e}")
             raise
         
-    def _api_call(self, endpoint: str, params: Dict, retries: int = 3) -> Dict:
+    def api_call(self, endpoint, params, retries: int = 3):
         for attempt in range(retries):
             try:
                 response = requests.get(
@@ -47,19 +47,23 @@ class ComprehensiveSoccerDataIngestion:
                 
                 if response.status_code == 429: # once again just ensuring i do not get banned
                     wait_time = (attempt + 1) * 5
-                    print(f" Rate limit gotten so waiting {wait_time}s before retry...")
+                    print(f" Rate limit gotten so waiting {wait_time}s before retry")
                     time.sleep(wait_time)
                     continue
                 
                 response.raise_for_status() #good saftey check
+
                 
                 # By this point, the call was successful, so now delay the next call for rate limit prevention
                 time.sleep(self.rate_limit_delay)
 
-                remaining = response.headers.get('x-ratelimit-requests-remaining')
-                limit = response.headers.get('x-ratelimit-requests-limit')
+                remaining = response.headers.get("x-ratelimit-requests-remaining")
+                limit = response.headers.get("x-ratelimit-requests-limit")
                 print(f"API Quota: {remaining}/{limit} remaining today.") # A visual representation of API Calls left too
  
+                if remaining < 2:
+                    print("STOP IT: Daily quota reached. Need to take that 24 hr break unfortunately.")
+                    raise SystemExit("Daily Quota almost surpassed")
                 
                 result = response.json()
                 return result
@@ -78,7 +82,7 @@ class ComprehensiveSoccerDataIngestion:
         
         return {}
     
-    def get_player_stats(self, player_id: int, season: int) -> Dict:
+    def get_player_stats(self, player_id, season):
         """
         Will likely update in future.
         Fetches stats for a specific player in a specific season.
@@ -91,4 +95,40 @@ class ComprehensiveSoccerDataIngestion:
             "season": season
         }
         
-        return self._api_call("players", params)
+        return self.api_call("players", params)
+    
+    # season check
+    
+    def get_seasons(self):
+        """Get all available seasons"""
+        data = self.api_call("seasons", {})
+        return data.get("response", [])
+    
+
+    # leagues check
+    def get_leagues(self, id: int = None, name: str = None, country: str = None, season: int = None, team: int = None, type: str = None):
+        """
+        Get leagues with all the available data.
+        """
+        params = {}
+        if id is not None: params["id"] = id
+        if name: params["name"] = name
+        if country: params["country"] = country
+        if season: params["season"] = season
+        if team: params["team"] = team
+        if type: params["type"] = type
+            
+        data = self.api_call("leagues", params)
+        
+        # Dataframe for leagues endpoint
+        return pd.DataFrame([
+            {
+                "league_id": item.get("leagues", {}).get("id"),
+                "name": item.get("leagues", {}).get("name"),
+                "team": item.get("leagues", {}).get("team"),
+                "type": item.get("leagues", {}).get("type"),
+                "country": item.get("leagues", {}).get("country"),
+                "season": item.get("leagues", {}).get("season")
+            }
+            for item in data.get("response", [])
+        ])
