@@ -10,7 +10,7 @@ api_key = os.getenv("API_key")
 ingestion = ComprehensiveSoccerDataIngestion(api_key = api_key)
 
 # Giving it a test with Haaland's id and season, this will only use on API Call just for good test
-data = ingestion.get_player_stats(player_id = 1100, season = 2023)
+#data = ingestion.get_player_stats(player_id = 1100, season = 2023)
 
 # Verifying it is correct
 """
@@ -24,4 +24,5 @@ else:
     print("No data found. Uh oh...")
 
 """
-ingestion.get_leagues(country="England") 
+leagues = ingestion.get_leagues(country="England") 
+print(leagues)

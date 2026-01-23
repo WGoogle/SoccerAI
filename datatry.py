@@ -59,11 +59,16 @@ class ComprehensiveSoccerDataIngestion:
 
                 remaining = response.headers.get("x-ratelimit-requests-remaining")
                 limit = response.headers.get("x-ratelimit-requests-limit")
-                print(f"API Quota: {remaining}/{limit} remaining today.") # A visual representation of API Calls left too
+                
  
-                if remaining < 2:
-                    print("STOP IT: Daily quota reached. Need to take that 24 hr break unfortunately.")
-                    raise SystemExit("Daily Quota almost surpassed")
+                if remaining and limit:
+                    remaining_int = int(remaining)
+                    limit_int = int(limit)
+                    print(f"API Quota: {remaining_int}/{limit_int} remaining today.") # A visual representation of API Calls left too
+                    
+                    if remaining_int < 2:
+                        print("STOP IT: Daily quota reached. Need to take that 24 hr break unfortunately.")
+                        raise SystemExit("Daily Quota almost surpassed")
                 
                 result = response.json()
                 return result
@@ -123,12 +128,10 @@ class ComprehensiveSoccerDataIngestion:
         # Dataframe for leagues endpoint
         return pd.DataFrame([
             {
-                "league_id": item.get("leagues", {}).get("id"),
-                "name": item.get("leagues", {}).get("name"),
-                "team": item.get("leagues", {}).get("team"),
-                "type": item.get("leagues", {}).get("type"),
-                "country": item.get("leagues", {}).get("country"),
-                "season": item.get("leagues", {}).get("season")
+                "league_id": item.get("league", {}).get("id"),
+                "name": item.get("league", {}).get("name"),
+                "team": item.get("league", {}).get("team"),
+                "type": item.get("league", {}).get("type")
             }
             for item in data.get("response", [])
         ])
