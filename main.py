@@ -24,5 +24,21 @@ else:
     print("No data found. Uh oh...")
 
 """
-leagues = ingestion.get_leagues(country="England") 
-print(leagues)
+# Checking leagues
+# leagues = ingestion.get_leagues(country="England") 
+
+"""
+# Checking games
+fixtures = ingestion.get_fixtures(league=39, season=2024, next=10)
+
+# Checking today's games
+from datetime import datetime
+today = datetime.now().strftime("%Y-%m-%d")
+fixtures = ingestion.get_fixtures(date=today)
+print(fixtures)
+
+"""
+
+# Checking standings 
+standings = ingestion.get_standings(league=39, season=2024)
+print(standings[["rank", "team_name", "points", "form"]])
