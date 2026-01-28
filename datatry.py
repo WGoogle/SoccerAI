@@ -235,3 +235,149 @@ class ComprehensiveSoccerDataIngestion:
         }
         for item in data.get("response", [])
     ])
+
+    def get_teams_statistics(self, league: int, season: int, team: int, date: str = None):
+   
+        params = {
+        "league": league,
+        "season": season,
+        "team": team
+        }
+        if date:
+            params["date"] = date
+    
+        data = self.api_call("teams/statistics", params)
+    
+        # Returns a single dict with all team stats
+        response = data.get("response", {})
+    
+        if not response:
+            return {}
+    
+        return {
+        "team_id": response.get("team", {}).get("id"),
+        "team_name": response.get("team", {}).get("name"),
+        "team_logo": response.get("team", {}).get("logo"),
+        "league_id": response.get("league", {}).get("id"),
+        "league_name": response.get("league", {}).get("name"),
+        "season": response.get("league", {}).get("season"),
+        "form": response.get("form"),
+        
+        # Fixtures
+        "fixtures_played_home": response.get("fixtures", {}).get("played", {}).get("home"),
+        "fixtures_played_away": response.get("fixtures", {}).get("played", {}).get("away"),
+        "fixtures_played_total": response.get("fixtures", {}).get("played", {}).get("total"),
+        "fixtures_wins_home": response.get("fixtures", {}).get("wins", {}).get("home"),
+        "fixtures_wins_away": response.get("fixtures", {}).get("wins", {}).get("away"),
+        "fixtures_wins_total": response.get("fixtures", {}).get("wins", {}).get("total"),
+        "fixtures_draws_home": response.get("fixtures", {}).get("draws", {}).get("home"),
+        "fixtures_draws_away": response.get("fixtures", {}).get("draws", {}).get("away"),
+        "fixtures_draws_total": response.get("fixtures", {}).get("draws", {}).get("total"),
+        "fixtures_loses_home": response.get("fixtures", {}).get("loses", {}).get("home"),
+        "fixtures_loses_away": response.get("fixtures", {}).get("loses", {}).get("away"),
+        "fixtures_loses_total": response.get("fixtures", {}).get("loses", {}).get("total"),
+        
+        # Goals
+        "goals_for_total_home": response.get("goals", {}).get("for", {}).get("total", {}).get("home"),
+        "goals_for_total_away": response.get("goals", {}).get("for", {}).get("total", {}).get("away"),
+        "goals_for_total": response.get("goals", {}).get("for", {}).get("total", {}).get("total"),
+        "goals_for_avg_home": response.get("goals", {}).get("for", {}).get("average", {}).get("home"),
+        "goals_for_avg_away": response.get("goals", {}).get("for", {}).get("average", {}).get("away"),
+        "goals_for_avg_total": response.get("goals", {}).get("for", {}).get("average", {}).get("total"),
+        "goals_against_total_home": response.get("goals", {}).get("against", {}).get("total", {}).get("home"),
+        "goals_against_total_away": response.get("goals", {}).get("against", {}).get("total", {}).get("away"),
+        "goals_against_total": response.get("goals", {}).get("against", {}).get("total", {}).get("total"),
+        "goals_against_avg_home": response.get("goals", {}).get("against", {}).get("average", {}).get("home"),
+        "goals_against_avg_away": response.get("goals", {}).get("against", {}).get("average", {}).get("away"),
+        "goals_against_avg_total": response.get("goals", {}).get("against", {}).get("average", {}).get("total"),
+        
+        # "Biggest Stats lol"
+        "biggest_streak_wins": response.get("biggest", {}).get("streak", {}).get("wins"),
+        "biggest_streak_draws": response.get("biggest", {}).get("streak", {}).get("draws"),
+        "biggest_streak_loses": response.get("biggest", {}).get("streak", {}).get("loses"),
+        "biggest_wins_home": response.get("biggest", {}).get("wins", {}).get("home"),
+        "biggest_wins_away": response.get("biggest", {}).get("wins", {}).get("away"),
+        "biggest_loses_home": response.get("biggest", {}).get("loses", {}).get("home"),
+        "biggest_loses_away": response.get("biggest", {}).get("loses", {}).get("away"),
+        
+        # Clean sheets
+        "clean_sheet_home": response.get("clean_sheet", {}).get("home"),
+        "clean_sheet_away": response.get("clean_sheet", {}).get("away"),
+        "clean_sheet_total": response.get("clean_sheet", {}).get("total"),
+        
+        # Failed to score, very interesting stat imo
+        "failed_to_score_home": response.get("failed_to_score", {}).get("home"),
+        "failed_to_score_away": response.get("failed_to_score", {}).get("away"),
+        "failed_to_score_total": response.get("failed_to_score", {}).get("total"),
+        
+        # Penalty
+        "penalty_scored_total": response.get("penalty", {}).get("scored", {}).get("total"),
+        "penalty_scored_percentage": response.get("penalty", {}).get("scored", {}).get("percentage"),
+        "penalty_missed_total": response.get("penalty", {}).get("missed", {}).get("total"),
+        "penalty_missed_percentage": response.get("penalty", {}).get("missed", {}).get("percentage"),
+        
+        # Cards - extract totals from time intervals
+        "yellow_cards_total": sum([
+            response.get("cards", {}).get("yellow", {}).get(interval, {}).get("total", 0) or 0
+            for interval in ["0-15", "16-30", "31-45", "46-60", "61-75", "76-90", "91-105", "106-120"]
+        ]),
+        "red_cards_total": sum([
+            response.get("cards", {}).get("red", {}).get(interval, {}).get("total", 0) or 0
+            for interval in ["0-15", "16-30", "31-45", "46-60", "61-75", "76-90", "91-105", "106-120"]
+        ]),
+        
+        # Lineups - most used formation
+        "most_used_formation": response.get("lineups", [{}])[0].get("formation") if response.get("lineups") else None,
+        "formation_played": response.get("lineups", [{}])[0].get("played") if response.get("lineups") else None
+    }
+
+
+    #OG H2H API call is not in our version, so need it make manual
+    def get_h2h(self, team1_id: int, team2_id: int, league: int = None, 
+           season: int = None, last: int = None, status: str = None):
+
+        print(f"Fetching H2H between team {team1_id} and team {team2_id}...")
+    
+        # Get all fixtures for team1
+        params = {"team": team1_id}
+        if league is not None: params["league"] = league
+        if season is not None: params["season"] = season
+        if last is not None: params["last"] = last
+        if status: params["status"] = status
+    
+        data = self.api_call("fixtures", params)
+    
+        # Filter for matches against team2
+        h2h_matches = []
+        for item in data.get("response", []):
+            home_id = item.get("teams", {}).get("home", {}).get("id")
+            away_id = item.get("teams", {}).get("away", {}).get("id")
+        
+        # Check if team2 is involved in this match
+        if home_id == team2_id or away_id == team2_id:
+            h2h_matches.append({
+                "fixture_id": item.get("fixture", {}).get("id"),
+                "referee": item.get("fixture", {}).get("referee"),
+                "date": item.get("fixture", {}).get("date"),
+                "timestamp": item.get("fixture", {}).get("timestamp"),
+                "venue_name": item.get("fixture", {}).get("venue", {}).get("name"),
+                "venue_city": item.get("fixture", {}).get("venue", {}).get("city"),
+                "status": item.get("fixture", {}).get("status", {}).get("long"),
+                "league_name": item.get("league", {}).get("name"),
+                "league_round": item.get("league", {}).get("round"),
+                "home_team_id": home_id,
+                "home_team_name": item.get("teams", {}).get("home", {}).get("name"),
+                "home_team_winner": item.get("teams", {}).get("home", {}).get("winner"),
+                "away_team_id": away_id,
+                "away_team_name": item.get("teams", {}).get("away", {}).get("name"),
+                "away_team_winner": item.get("teams", {}).get("away", {}).get("winner"),
+                "home_goals": item.get("goals", {}).get("home"),
+                "away_goals": item.get("goals", {}).get("away"),
+                "winner": (item.get("teams", {}).get("home", {}).get("name") 
+                          if item.get("teams", {}).get("home", {}).get("winner") 
+                          else (item.get("teams", {}).get("away", {}).get("name") 
+                               if item.get("teams", {}).get("away", {}).get("winner") 
+                               else "Draw"))
+            })
+    
+        return pd.DataFrame(h2h_matches)
